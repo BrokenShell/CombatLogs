@@ -1,16 +1,16 @@
 # Combat Logs
 Generate combat logs for machine learning project.
 
+### Project Link
+https://github.com/BrokenShell/CombatLogs
 
 ## CombatUnit
-- Name
 - Class
 - Level
 - Health
 - Damage
 - Offence
 - Defense
-
 
 ## Simple D20 system
 ### Attack Roll
