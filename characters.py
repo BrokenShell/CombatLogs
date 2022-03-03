@@ -215,8 +215,10 @@ class Pirate(CombatUnit):
 
 def combat(attacker: CombatUnit, defender: CombatUnit):
     while attacker and defender:
-        attacker.attack(defender)
-        defender.attack(attacker)
+        if attacker:
+            attacker.attack(defender)
+        if defender:
+            defender.attack(attacker)
     if attacker:
         return attacker.name
     elif defender:
@@ -246,7 +248,7 @@ def campaign():
         file.writerow((
             "Attacker", "AttackerLevel",
             "Defender", "DefenderLevel",
-            "Winner"
+            "Winner",
         ))
         for _ in range(100000):
             attacker = random_class(dice(1, 20))
@@ -254,7 +256,7 @@ def campaign():
             file.writerow((
                 attacker.name, attacker.level,
                 defender.name, defender.level,
-                combat(attacker, defender)
+                combat(attacker, defender),
             ))
 
 
