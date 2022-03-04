@@ -1,6 +1,6 @@
 import csv
 
-from Fortuna import dice, d, RandomValue
+from Fortuna import dice, d, RandomValue, percent_true
 
 
 class Resource:
@@ -64,20 +64,20 @@ class Barbarian(CombatUnit):
 
     def special(self, other):
         """ Rampage - imposes disadvantage on the defender """
-        disadvantage = min((d(20), d(20))) + other.defense
+        disadvantage = min(d(20), d(20)) + other.defense
         if d(20) + self.offense > disadvantage:
             other.health -= self.damage()
 
 
 class Bard(CombatUnit):
     name = "Bard"
-    hit_dice = 6
-    damage_dice = 6
+    hit_dice = 8
+    damage_dice = 8
     offense = 2
     defense = 3
 
     def special(self, other):
-        """ Inspiration - increase damage delt """
+        """ Inspiration - increase damage dealt """
         if d(20) + self.offense > d(20) + other.defense:
             other.health -= self.damage() + self.damage()
 
@@ -156,21 +156,21 @@ class Archer(CombatUnit):
 
 class Ninja(CombatUnit):
     name = "Ninja"
-    hit_dice = 4
-    damage_dice = 12
-    offense = 4
-    defense = 1
+    hit_dice = 20
+    damage_dice = 20
+    offense = 8
+    defense = 8
 
     def special_attack(self, other):
         """ Ambush - grants a bonus attack to the attacker,
             first attack has advantage,
             second attack has disadvantage """
-        first_attack = max(d(20), d(20)) + self.offense
+        first_attack = max(d(20), d(20)) + (self.offense * 10)
         if first_attack > d(20) + other.defense:
-            other.health -= self.damage()
+            other.health -= self.damage() * 10
         second_attack = min(d(20), d(20)) + self.offense
         if second_attack > d(20) + other.defense:
-            other.health -= self.damage()
+            other.health -= self.damage() * 10
 
 
 class Paladin(CombatUnit):
@@ -214,9 +214,14 @@ class Pirate(CombatUnit):
 
 
 def combat(attacker: CombatUnit, defender: CombatUnit):
-    while attacker and defender:
-        attacker.attack(defender)
-        defender.attack(attacker)
+    if percent_true(50):
+        while attacker and defender:
+            attacker.attack(defender)
+            defender.attack(attacker)
+    else:
+        while attacker and defender:
+            defender.attack(attacker)
+            attacker.attack(defender)
     if attacker:
         return attacker.name
     elif defender:
@@ -248,7 +253,7 @@ def campaign():
             "Defender", "DefenderLevel",
             "Winner",
         ))
-        for _ in range(10000):
+        for _ in range(1200000):
             attacker = random_class(dice(1, 20))
             defender = random_class(dice(1, 20))
             file.writerow((

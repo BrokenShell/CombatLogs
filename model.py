@@ -1,11 +1,13 @@
+import csv
 from functools import reduce
+from itertools import combinations_with_replacement, chain
 from operator import mul
 
 import joblib
 import pandas
 from pandas import DataFrame
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV, train_test_split
 
 
 def encoder(label: str) -> int:
@@ -54,11 +56,18 @@ def find_best_fit():
         n_iter=reduce(mul, map(len, param_dist.values())),
     )
     model.fit(features, target)
-    return model.best_estimator_
+    return model.best_score_, model.best_estimator_
 
 
 def make_model():
     features, target = get_data()
+    X_train, X_test, y_train, y_test = train_test_split(
+        features,
+        target,
+        random_state=25377689,
+        test_size=0.15,
+        stratify=target,
+    )
     model = RandomForestClassifier(
         criterion='entropy',
         max_depth=10,
@@ -66,12 +75,15 @@ def make_model():
         random_state=25377689,
         n_estimators=299,
     )
-    model.fit(features, target)
+    model.fit(X_train, y_train)
     joblib.dump(model, "model.joblib")
+    print(model.score(X_train, y_train))
+    print(model.score(X_test, y_test))
+    return model
 
 
 def prediction(attacker, attacker_level, defender, defender_level):
-    model = joblib.load("model.joblib")
+    model = joblib.load("gbc_model.joblib")
     basis = DataFrame([{
         "Attacker": encoder(attacker),
         "AttackerLevel": attacker_level,
@@ -88,23 +100,52 @@ def prediction_str(attacker, attacker_level, defender, defender_level):
     return f"{pred:>11} {prob:.1%}"
 
 
+def prediction_outputs(group, level):
+    with open(f"predictions.csv", "a") as csv_file:
+        file = csv.writer(csv_file, delimiter=',')
+        file.writerow((
+            "Attacker", "AttackerLevel",
+            "Defender", "DefenderLevel",
+            "Prediction", "Confidence",
+        ))
+        for player_1, player_2 in combinations_with_replacement(group, 2):
+            pred, proba = prediction(
+                player_1, level,
+                player_2, level,
+            )
+            file.writerow((
+                player_1, level,
+                player_2, level,
+                pred, round(proba, 2),
+            ))
+
+
+class_list = [
+    "Barbarian",
+    "Bard",
+    "Rogue",
+    "Wizard",
+    "Warlock",
+    "Necromancer",
+    "Archer",
+    "Ninja",
+    "Paladin",
+    "Druid",
+    "Monk",
+    "Pirate",
+]
+
+
+def do_all_predictions():
+    for level in range(1, 21):
+        prediction_outputs(class_list, level)
+
+
 if __name__ == '__main__':
-    # make_model()
-    model = joblib.load("model.joblib")
-    lookup = {
-        "Barbarian": 1,
-        "Bard": 2,
-        "Rogue": 3,
-        "Wizard": 4,
-        "Warlock": 5,
-        "Necromancer": 6,
-        "Archer": 7,
-        "Ninja": 8,
-        "Paladin": 9,
-        "Druid": 10,
-        "Monk": 11,
-        "Pirate": 12,
-    }
-    for opponent in lookup.keys():
-        print(f"Barbarian vs {opponent:<11}", end=" => ")
-        print(prediction_str("Barbarian", 20, opponent, 20))
+    # model = make_model()
+    # challenger = "Ninja"
+    for challenger in class_list:
+        for opponent in class_list:
+            print(f"{challenger:>11} vs {opponent:<11}", end=" => ")
+            print(prediction_str(challenger, 20, opponent, 20))
+    # do_all_predictions()
